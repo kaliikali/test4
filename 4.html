@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Test</title>
+<style>
+body { font-family:'Segoe UI',sans-serif; background:linear-gradient(135deg,#667eea,#764ba2); padding:30px; }
+h2 { color:#fff; text-align:center; margin-bottom:30px; }
+.question{ background:#fff; padding:20px; margin-bottom:20px; border-radius:12px; box-shadow:0 8px 20px rgba(0,0,0,.1); }
+.question p{ font-weight:600; margin-bottom:10px; }
+label{ display:block; padding:8px 12px; margin:6px 0; border-radius:8px; cursor:pointer; transition:background .2s; }
+label:hover{ background:#f0f3ff; }
+input[type="radio"]{ margin-right:8px; }
+button{ display:block; margin:30px auto; padding:12px 30px; font-size:16px; border:none; border-radius:8px; background:#4c51bf; color:#fff; font-weight:bold; }
+button:hover{ background:#3730a3; }
+.correct{ background:#d4edda !important; color:#155724; font-weight:bold; }
+.wrong{ background:#f8d7da !important; color:#721c24; font-weight:bold; }
+.result{ text-align:center; font-size:20px; margin-top:20px; color:#fff; font-weight:bold; }
+
+@media (max-width:600px){
+  body{ padding:14px; }
+  h2{ font-size:22px; margin-bottom:16px; }
+  .question{ padding:14px; border-radius:10px; }
+  .question p{ font-size:16px; line-height:1.35; }
+  label{ padding:10px 12px; font-size:15px; }
+  button{ width:100%; padding:14px 16px; font-size:16px; }
+  .result{ font-size:18px; }
+}
+</style>
+</head>
+<body>
+
+<h2>Test</h2>
+<form id="quiz"></form>
+<button type="button" id="checkBtn">Yoxla</button>
+<div class="result" id="result"></div>
+
+<script>
+/** Fisher–Yates shuffle (Safari üçün stabil) */
+function shuffleInPlace(arr){
+  for(let i = arr.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+const questions = [
+{
+    id: 121,
+    text: "Bazar iqtisadiyyatı şəraitində qiymətləri dövlət tənzimlənməsi üsulları",
+    answers: [
+      { text: "İqtisadi üsullar", correct: false },
+      { text: "İnzibati üsullar", correct: false },
+      { text: "Ənənəvi üsullar", correct: false },
+      { text: "İqtisadi, inzibati üsullar", correct: true },
+      { text: "Qarışıq üsullar", correct: false },
+    ]
+  },
+  {
+    id: 122,
+    text: "İş axtaranlar və ya işlə təmin olunacaq əmək qabiliyyətli adamlar",
+    answers: [
+      { text: "Gizli işsizlik", correct: false },
+      { text: "Struktur işsizlik", correct: false },
+      { text: "Friksion işsizlik", correct: true },
+      { text: "Daimi işsizlik", correct: false },
+      { text: "Qarışıq işsizlik", correct: false },
+    ]
+  },
+  {
+    id: 123,
+    text: "Əhalinin alıcılıq qabiliyyətini əks etdirən gəlir",
+    answers: [
+      { text: "Sərəncamda olan gəlir", correct: false },
+      { text: "Nominal gəlir", correct: false },
+      { text: "Real gəlir", correct: true },
+      { text: "Məcmu gəlir", correct: false },
+      { text: "Məcmu və nominal gəlir", correct: false },
+    ]
+  },
+  {
+    id: 124,
+    text: "İctimai istehsalın nəticəsi ilə maddi, əmək və maliyyə xərcləri arasında nisbət",
+    answers: [
+      { text: "İqtisadi artım", correct: false },
+      { text: "İqtisadi səmərəlilik", correct: true },
+      { text: "Effektivlik", correct: false },
+      { text: "İnfeksivlik", correct: false },
+      { text: "Məhsuldarlıq", correct: false },
+    ]
+  },
+  {
+    id: 125,
+    text: "Öz işçi qüvvəsini əmtəə kimi sahibkara (firma, fermerə) müqavilə yolu ilə satan fərd",
+    answers: [
+      { text: "İşçi qüvvəsi", correct: true },
+      { text: "Fərd", correct: false },
+      { text: "Fəhlə", correct: false },
+      { text: "Qulluqçu", correct: false },
+      { text: "İşsiz insan", correct: false },
+    ]
+  },
+  {
+    id: 126,
+    text: "Kreditin forması",
+    answers: [
+      { text: "Dövlət, kommersiya, veksel, istehlak", correct: false },
+      { text: "İstehlak, dövlət, kommersiya, beynəlxalq", correct: false },
+      { text: "Kommunal, dövlət, kommersiya", correct: false },
+      { text: "Beynəlxalq, dövlət və kommersiya krediti, bank krediti", correct: false },
+      { text: "Dövlət, kommersiya, ipoteka, beynəlxalq, veksel, istehlak, kənd təsərrüfatı", correct: true },
+    ]
+  },
+  {
+    id: 127,
+    text: "Ümumi daxili məhsuldan amortizasiya ayırmaları çıxıldıqdan sonra yerdə qalan hissə",
+    answers: [
+      { text: "Ümumi daxili məhsul", correct: false },
+      { text: "Ümumi milli məhsul", correct: false },
+      { text: "Milli sərvət", correct: false },
+      { text: "Xalis milli məhsul", correct: true },
+      { text: "Milli gəlir", correct: false },
+    ]
+  },
+  {
+    id: 128,
+    text: "Kredit idarəsinin pul vəsaitini deponentləşdirməsi, müştərinin depoziti və ona müvafiq faiz almağını təsdiq edən sənəd",
+    answers: [
+      { text: "İstiqraz", correct: false },
+      { text: "Kredit kartlar", correct: false },
+      { text: "Əmanət sertifikatları", correct: true },
+      { text: "Depozit hesablar", correct: false },
+      { text: "Köçürmə əmanətlər", correct: false },
+    ]
+  },
+  {
+    id: 129,
+    text: "Əməksiz gəlirlər neçə yerə bölünür",
+    answers: [
+      { text: "Leqal gəlirlər", correct: false },
+      { text: "Qeyri-qanuni gəlirlər", correct: false },
+      { text: "Leqal, nominal və qeyri-leqal gəlirlər", correct: false },
+      { text: "Leqal və qeyri-qanuni gəlirlər", correct: true },
+      { text: "Nominal gəlirlər", correct: false },
+    ]
+  },
+  {
+    id: 130,
+    text: "Dövlət xərcləri və vergilər ilə bağlı tənzimləmə sistemi",
+    answers: [
+      { text: "Maliyyə siyasəti", correct: false },
+      { text: "Fiskal siyasət", correct: true },
+      { text: "Pul-kredit siyasəti", correct: false },
+      { text: "Dövlət siyasəti", correct: false },
+      { text: "İqtisadi tənzimləmə siyasəti", correct: false },
+    ]
+  },
+  {
+    id: 131,
+    text: "Müəyyən dövrdə mövcud qiymətlərin səviyyəsinə uyğun istehsal olunub satışa çıxardılmış əmtəə və xidmətlərin cəmi",
+    answers: [
+      { text: "Məcmu təklif", correct: true },
+      { text: "Məcmu tələb", correct: false },
+      { text: "Məcmu tələbat", correct: false },
+      { text: "Məcmu xidmət", correct: false },
+      { text: "Məcmu gəlir", correct: false },
+    ]
+  },
+  {
+    id: 132,
+    text: "İstehsal durğunluğu zamanı baş verən işsizlik",
+    answers: [
+      { text: "İnstitutsional işsizlik", correct: false },
+      { text: "Struktur işsizlik", correct: false },
+      { text: "Friksion işsizlik", correct: false },
+      { text: "Təbii işsizlik", correct: false },
+      { text: "Tsiklik işsizlik", correct: true },
+    ]
+  },
+  {
+    id: 133,
+    text: "İnflyasiyanın qarşısını necə yolla almaq olar",
+    answers: [
+      { text: "İnflyasiyaya uyğunlaşmaq və sərt tədbirlər həyata keçirmək", correct: false },
+      { text: "İnflyasiyaya uyğunlaşmaq", correct: false },
+      { text: "Dövlət tənzimlənməsi", correct: false },
+      { text: "Pul-kredit siyasəti", correct: false },
+      { text: "Göstərilənlərdən hamısı", correct: true },
+    ]
+  },
+  {
+    id: 134,
+    text: "Tamamilə istehsalın təsirindən asılı olan xərclər",
+    answers: [
+      { text: "Dəyişən məsrəflər", correct: true },
+      { text: "Sabit məsrəflər", correct: false },
+      { text: "Alternativ məsrəflər", correct: false },
+      { text: "Yekun məsrəflər", correct: false },
+      { text: "Daxili məsrəflər", correct: false },
+    ]
+  },
+  {
+    id: 135,
+    text: "Əmtəə istehsalı zamanı işçilərin bir (yaxud bir neçə) əməliyyatın icrası üzrə ixtisaslaşması",
+    answers: [
+      { text: "Əmək mübadiləsi", correct: false },
+      { text: "Əmək bölgüsü", correct: true },
+      { text: "Əməyin ixtisaslaşması", correct: false },
+      { text: "Əmək haqqı", correct: false },
+      { text: "Əmək hazırlığı", correct: false },
+    ]
+  },
+  {
+    id: 136,
+    text: "Əmtəə tədavülü prosesinin tərkib hissəsi olub vasitəçi xarakter daşıyan ticarət",
+    answers: [
+      { text: "Pərakəndə ticarət", correct: false },
+      { text: "Topdansatış ticarət", correct: true },
+      { text: "Xarici ticarət", correct: false },
+      { text: "Daxili ticarət", correct: false },
+      { text: "Milli ticarət", correct: false },
+    ]
+  },
+  {
+    id: 137,
+    text: "Ticarət kapitalının formaları",
+    answers: [
+      { text: "Əmtəə", correct: false },
+      { text: "Pul", correct: false },
+      { text: "Kredit-pul", correct: false },
+      { text: "Əmtəə-pul", correct: true },
+      { text: "Əmtəə-kredit", correct: false },
+    ]
+  },
+  {
+    id: 138,
+    text: "Oliqapolik bazar mükəmməl rəqabətli bazardan hansı xüsusiyyətinə görə fərqlənir",
+    answers: [
+      { text: "Qiymətlərin dəyişmə xüsusiyyətinə görə", correct: true },
+      { text: "Bazar münasibətlərinə görə və tələbə görə", correct: false },
+      { text: "Qeyri-sabitliyinə görə", correct: false },
+      { text: "Tənzimlənməsinə görə", correct: false },
+      { text: "İnhisara görə", correct: false },
+    ]
+  },
+  {
+    id: 139,
+    text: "Fəaliyyət müddətlərinə görə qiymətlərin növləri",
+    answers: [
+      { text: "Sabit, cari, mövsumi", correct: false },
+      { text: "Cari, mövsumi, sürüşkən", correct: false },
+      { text: "Sabit, cari, mövsumi, sürüşkən, mərhələli", correct: true },
+      { text: "Mərhələli, cari, sürüşkən", correct: false },
+      { text: "Mərhələli, sabit, mövsumi, sürüşkən", correct: false },
+    ]
+  },
+  {
+    id: 140,
+    text: "Avropa valyuta sistemi neçənci ildən fəaliyyət göstərir",
+    answers: [
+      { text: "1970", correct: false },
+      { text: "1975", correct: false },
+      { text: "1978", correct: true },
+      { text: "1980", correct: false },
+      { text: "1985", correct: false },
+    ]
+  },
+  {
+    id: 141,
+    text: "Müvəqqəti sərbəst olan pul-kapital kredit vasitəsi ilə hansı kapitala çevrilir",
+    answers: [
+      { text: "Sələm kapitalına", correct: false },
+      { text: "İstiqraz vərəqlərinə", correct: false },
+      { text: "Səhmdar kapitalına", correct: false },
+      { text: "Bank kapitalına", correct: false },
+      { text: "Borc kapitalına", correct: true },
+    ]
+  },
+  {
+    id: 142,
+    text: "İstehsalda fəaliyyət göstərən inhisarın formaları",
+    answers: [
+      { text: "Trest, koonepasiya, kartel, sindikat", correct: false },
+      { text: "Konsere, konsersun, firma, trest-sindikat", correct: false },
+      { text: "Sindikat, koonerativ, konsersum, konsern", correct: false },
+      { text: "Sindikat, trest, birgə müəssisə, konsern, konsersum", correct: false },
+      { text: "Kartel, sindikat, trest, konsersum, konsern", correct: true },
+    ]
+  },
+  {
+    id: 143,
+    text: "Eyni bir istehsal sahəsi müəssisələrinin elə birləşməsidir ki, iştirakçılar istehsal vasitələri və istehsal olunmuş məhsul üzərində mülkiyyətini saxlayır",
+    answers: [
+      { text: "Sindikat", correct: false },
+      { text: "Trest", correct: false },
+      { text: "Konsern", correct: false },
+      { text: "Kartel", correct: true },
+      { text: "Konsersum", correct: false },
+    ]
+  },
+  {
+    id: 144,
+    text: "İlkin kapital yığımının əsas mənbəyi",
+    answers: [
+      { text: "İstehsal", correct: false },
+      { text: "Pul vəsaitinin toplanması", correct: false },
+      { text: "Pulun tədavülü", correct: false },
+      { text: "Pulun tədiyyəsi", correct: true },
+      { text: "Pulun dondurulması", correct: false },
+    ]
+  },
+  {
+    id: 145,
+    text: "Satıcının müəyyən dövr ərzində hər hansı bir əmtəəni müəyyən qiymətlə və müəyyən kəmiyyətlə satmaq arzusu",
+    answers: [
+      { text: "Tələb", correct: false },
+      { text: "Təlabat", correct: false },
+      { text: "Təklif", correct: true },
+      { text: "Tələb əyrisi", correct: false },
+      { text: "Təklif əyrisi", correct: false },
+    ]
+  },
+  {
+    id: 146,
+    text: "Təklifə təsir edən əsas amil",
+    answers: [
+      { text: "Zövq", correct: false },
+      { text: "Qiymət", correct: true },
+      { text: "Çeşid", correct: false },
+      { text: "Keyfiyyət", correct: false },
+      { text: "Kəmiyyət", correct: false },
+    ]
+  },
+  {
+    id: 147,
+    text: "Əmtəə və xidmətlərin ixrac və idxalını maneəsiz həyata keçirən ölkələrin iqtisadiyyatı",
+    answers: [
+      { text: "Qapalı iqtisadiyyat", correct: false },
+      { text: "Ənənəvi iqtisadiyyat", correct: false },
+      { text: "Qarışıq iqtisadiyyat", correct: false },
+      { text: "Açıq iqtisadiyyat", correct: true },
+      { text: "Azad iqtisadiyyat", correct: false },
+    ]
+  },
+  {
+    id: 148,
+    text: "Müəssisə və firmaların daxili bazarda satdığı xalq istehlakı malları və xidmətlərə qoyulan dolayı vergi",
+    answers: [
+      { text: "Dövriyyə vergisi", correct: false },
+      { text: "Aksizlər", correct: true },
+      { text: "Tədiyyə vergisi", correct: false },
+      { text: "Dolayı vergi", correct: false },
+      { text: "Birbaşa vergilər", correct: false },
+    ]
+  },
+  {
+    id: 149,
+    text: "Eyniadlı yaxud müxtəlif çeşiddə malların bərabər dəyər həcmində pulsuz mübadiləsi",
+    answers: [
+      { text: "Mübadilə", correct: false },
+      { text: "Satış", correct: false },
+      { text: "Tədiyyə", correct: false },
+      { text: "Barter", correct: true },
+      { text: "Mal", correct: false },
+    ]
+  },
+  {
+    id: 150,
+    text: "Səhmdar cəmiyyətinə kapital kimi müəyyən miqdarda pul dəyəri və digər hissəsinə dividend şəklində hüquq verən qiymətli kağız",
+    answers: [
+      { text: "Pul dəyəri", correct: false },
+      { text: "Dividend", correct: false },
+      { text: "Kapital gəliri", correct: false },
+      { text: "Aksiya", correct: true },
+      { text: "Qiymətli kağız", correct: false },
+    ]
+  },
+  {
+    id: 151,
+    text: "Alıcı və satıcı tərəfindən razılaşdırılaraq əmtəənin satıldığı qiymət",
+    answers: [
+      { text: "Bazar tarazlığı", correct: false },
+      { text: "Bazar qiyməti", correct: true },
+      { text: "Topdan satış qiymət", correct: false },
+      { text: "Pərakəndə satış qiymət", correct: false },
+      { text: "Daxili qiymətlər", correct: false },
+    ]
+  },
+  {
+    id: 152,
+    text: "Təklif öz həcmi ilə istehsalda azdır ya çoxdur",
+    answers: [
+      { text: "Bərabərdir", correct: false },
+      { text: "Çoxdur", correct: false },
+      { text: "Azdır", correct: true },
+      { text: "Orta səviyyədədir", correct: false },
+      { text: "Tarazdır", correct: false },
+    ]
+  },
+  {
+    id: 153,
+    text: "Hüquqi şəxslərin və təsərrüfat subyektlərinin maliyyə-təsərrüfat fəaliyyətinin iflasa varması və borc ödəmək imkanının olmamasının məhkəmə tərəfindən etiraf edilməsi",
+    answers: [
+      { text: "Bonkrotlaşma", correct: false },
+      { text: "Müflüsləşmə", correct: true },
+      { text: "Nifilyasiya", correct: false },
+      { text: "İflasa uğrama", correct: false },
+      { text: "Borca düşmə", correct: false },
+    ]
+  },
+  {
+    id: 154,
+    text: "M = PQ : X formulu ilə nə müəyyən olunur",
+    answers: [
+      { text: "Tədavül üçün zəruri olan pulun miqdarı", correct: true },
+      { text: "Tədiyyə üçün zəruri olan pulun miqdarı", correct: false },
+      { text: "Təqavül üçün zəruri olan pulun miqdarı", correct: false },
+      { text: "Təqavül və tədiyyə üçün zəruri olan pulun miqdarı", correct: false },
+      { text: "Təklif üçün zəruri olan pulun miqdarı", correct: false },
+    ]
+  },
+  {
+    id: 155,
+    text: "İşsizliyin iş qüvvəsinə faizlə olan nisbəti",
+    answers: [
+      { text: "İşsizliyin kəmiyyəti", correct: false },
+      { text: "İşsizliyin əyrisi", correct: false },
+      { text: "İşsizliyin səviyyəsi", correct: true },
+      { text: "İşsizlik", correct: false },
+      { text: "İşsizlik norması", correct: false },
+    ]
+  },
+  {
+    id: 156,
+    text: "Müəyyən vaxt dövründə məhsul göndərişinin həyata keçdiyi qiymətlər",
+    answers: [
+      { text: "Pərakəndə qiymətlər", correct: false },
+      { text: "Topdansatış qiymətlər", correct: false },
+      { text: "Cari qiymətlər", correct: false },
+      { text: "Mövsumi qiymətlər", correct: true },
+      { text: "Satınan qiymətlər", correct: false },
+    ]
+  },
+  {
+    id: 157,
+    text: "Qiymətli kağızların alqı-satqısının həyata keçirildiyi bazar",
+    answers: [
+      { text: "Əmtəə bazarı", correct: false },
+      { text: "Yarmarka", correct: false },
+      { text: "Auksion", correct: false },
+      { text: "Fond birjası", correct: true },
+      { text: "İstehsal bazarı", correct: false },
+    ]
+  },
+  {
+    id: 158,
+    text: "Xalq istehlakı malları bazarının tərkib hissəsi olan, əhaliyə göstərilən xidmətlər bazarı",
+    answers: [
+      { text: "İstehsal vasitələri bazarı", correct: false },
+      { text: "Xidmətlər bazarı", correct: true },
+      { text: "İstehlak bazarı", correct: false },
+      { text: "İstehlak malları bazarı", correct: false },
+      { text: "Pərakəndə bazar", correct: false },
+    ]
+  },
+  {
+    id: 159,
+    text: "İstehlak məhsulları və xidmətlərin qiymətinin dəyişməsini ölçmək üçün istifadə olunan qiymət indeksi",
+    answers: [
+      { text: "Topdansatış qiymət indeksi", correct: false },
+      { text: "Real qiymət indeksi", correct: false },
+      { text: "Pərakəndə satış qiymət indeksi", correct: false },
+      { text: "Qiymət indeksi", correct: false },
+      { text: "İstehlak şeylərinin qiymət indeksi", correct: true },
+    ]
+  },
+  {
+    id: 160,
+    text: "Maliyyənin yerinə yetirdiyi funksiyalar",
+    answers: [
+      { text: "Təkrar istehsal, bölgü, mübadilə", correct: false },
+      { text: "Bölgü və nəzarət", correct: false },
+      { text: "Nəzarət və stimullaşdırıcı", correct: false },
+      { text: "Stimullaşdırıcı və bölgü-paylayıcı və nəzarət", correct: false },
+      { text: "Təkrar istehsal, nəzarət, bölgü, stimullaşdırıcı", correct: true },
+    ]
+  },
+];
+
+let rendered = []; // render zamanı qarışmış versiya
+
+function renderQuiz(){
+  const quiz = document.getElementById("quiz");
+  quiz.innerHTML = "";
+
+  rendered = questions.map(q => ({
+    id: q.id,
+    text: q.text,
+    answers: shuffleInPlace(q.answers.map(a => ({...a}))) // cavablar qarışsın
+  }));
+
+  shuffleInPlace(rendered); // suallar qarışsın
+
+  rendered.forEach((q, index) => {
+    const div = document.createElement("div");
+    div.className = "question";
+    div.innerHTML = `<p>${q.id}. ${q.text}</p>`;
+
+    q.answers.forEach((a, ai) => {
+      const inputId = `q${index}_a${ai}`;
+      div.innerHTML += `
+        <label for="${inputId}">
+          <input id="${inputId}" type="radio" name="q${index}" value="${a.correct ? "1" : "0"}">
+          ${a.text}
+        </label>`;
+    });
+
+    quiz.appendChild(div);
+  });
+
+  document.getElementById("result").textContent = "";
+}
+
+function checkAnswers(){
+  let score = 0;
+  const questionDivs = document.querySelectorAll(".question");
+
+  questionDivs.forEach((qDiv, qi) => {
+    const radios = qDiv.querySelectorAll('input[type="radio"]');
+
+    radios.forEach(radio => {
+      const label = radio.parentElement;
+
+      if(radio.checked){
+        if(radio.value === "1"){
+          score++;
+          label.classList.add("correct");
+        } else {
+          label.classList.add("wrong");
+        }
+      }
+
+      if(radio.value === "1"){
+        label.classList.add("correct"); // düzgün cavabı göstər
+      }
+
+      radio.disabled = true;
+    });
+  });
+
+  document.getElementById("result").textContent =
+    `Düzgün cavab sayı: ${score} / ${rendered.length}`;
+}
+
+document.getElementById("checkBtn").addEventListener("click", checkAnswers);
+
+document.addEventListener("DOMContentLoaded", renderQuiz);
+</script>
+
+</body>
+</html>
